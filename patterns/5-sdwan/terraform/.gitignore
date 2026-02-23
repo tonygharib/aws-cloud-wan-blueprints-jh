@@ -8,10 +8,6 @@ tfplan
 # OS
 .DS_Store
 
-# AI/IDE tooling
-.kiro/
-.claude/
-
 # Python
 .hypothesis/
 .pytest_cache/
