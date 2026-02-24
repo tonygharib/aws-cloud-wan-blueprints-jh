@@ -48,3 +48,8 @@ terraform.rc
 .terraform.lock.hcl
 
 .temp
+.build/
+.kiro/
+.claude/
+.hypothesis/
+tests/
