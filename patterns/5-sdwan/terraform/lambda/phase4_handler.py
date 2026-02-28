@@ -165,10 +165,10 @@ def parse_verify_output(stdout, router_name):
 
 
 def persist_results_to_ssm(result):
-    """Write verification results to SSM Parameter Store.
+    """Write a human-readable verification report to SSM Parameter Store.
 
-    Persists the full verification result JSON to /sdwan/verification-results
-    so users can retrieve results without accessing Step Functions history.
+    Formats the verification results as a text summary and persists it to
+    /sdwan/verification-results for easy retrieval via AWS CLI or console.
 
     On failure, logs the error and returns without raising — the phase
     should not fail due to a persistence issue.
@@ -178,15 +178,69 @@ def persist_results_to_ssm(result):
                 success_count, fail_count)
     """
     try:
+        report = _format_report(result)
         client = boto3.client("ssm")
         client.put_parameter(
             Name="/sdwan/verification-results",
-            Value=json.dumps(result),
+            Value=report,
             Type="String",
             Overwrite=True,
         )
     except Exception as e:
         print(f"Failed to persist verification results to SSM: {e}")
+def _format_report(result):
+    """Format verification results as a human-readable text report.
+
+    Args:
+        result: The full verification result dict
+
+    Returns:
+        str: Formatted text report
+    """
+    def icon(val):
+        if val == "ok":
+            return "pass"
+        elif val == "not_applicable":
+            return "n/a"
+        return "FAIL"
+
+    lines = [
+        "SD-WAN Verification Report",
+        "=" * 50,
+        "",
+    ]
+
+    for router_name, router_result in result.get("results", {}).items():
+        details = router_result.get("details", {})
+        status = router_result.get("status", "Unknown")
+
+        if status != "Success":
+            lines.append(f"  {router_name:<14} FAIL - SSM command failed")
+            continue
+
+        ping_parts = []
+        for ip, val in details.get("ping", {}).items():
+            ping_parts.append(f"Ping({ip})={icon(val)}")
+
+        checks = (
+            f"IPsec={icon(details.get('ipsec', 'fail'))}  "
+            f"BGP={icon(details.get('bgp', 'fail'))}  "
+            f"CloudWAN-BGP={icon(details.get('cloudwan_bgp', 'fail'))}  "
+            + "  ".join(ping_parts)
+        )
+
+        lines.append(f"  {router_name:<14} {checks}")
+
+    lines.append("")
+    total = result.get("success_count", 0) + result.get("fail_count", 0)
+    lines.append(
+        f"Result: {result.get('success_count', 0)}/{total} routers passed"
+    )
+
+    return "\n".join(lines)
+
+
+
 
 
 def handler(event, context):
