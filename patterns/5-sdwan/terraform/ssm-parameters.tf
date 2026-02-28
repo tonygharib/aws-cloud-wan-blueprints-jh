@@ -149,3 +149,74 @@ resource "aws_ssm_parameter" "fra_branch1_outside_private_ip" {
     Name = "sdwan-fra-branch1-outside-private-ip"
   }
 }
+
+
+# -----------------------------------------------------------------------------
+# Cloud WAN Connect Peer BGP Configuration (for Phase 4 Lambda)
+# -----------------------------------------------------------------------------
+
+resource "aws_ssm_parameter" "nv_sdwan_cloudwan_peer_ip1" {
+  provider = aws.virginia
+  name     = "/sdwan/nv-sdwan/cloudwan-peer-ip1"
+  type     = "String"
+  value    = try(aws_networkmanager_connect_peer.nv_sdwan.configuration[0].bgp_configurations[0].core_network_address, "")
+
+  tags = {
+    Name = "sdwan-nv-sdwan-cloudwan-peer-ip1"
+  }
+}
+
+resource "aws_ssm_parameter" "nv_sdwan_cloudwan_peer_ip2" {
+  provider = aws.virginia
+  name     = "/sdwan/nv-sdwan/cloudwan-peer-ip2"
+  type     = "String"
+  value    = try(aws_networkmanager_connect_peer.nv_sdwan.configuration[0].bgp_configurations[1].core_network_address, "")
+
+  tags = {
+    Name = "sdwan-nv-sdwan-cloudwan-peer-ip2"
+  }
+}
+
+resource "aws_ssm_parameter" "nv_sdwan_cloudwan_asn" {
+  provider = aws.virginia
+  name     = "/sdwan/nv-sdwan/cloudwan-asn"
+  type     = "String"
+  value    = tostring(try(aws_networkmanager_connect_peer.nv_sdwan.configuration[0].bgp_configurations[0].core_network_asn, "64512"))
+
+  tags = {
+    Name = "sdwan-nv-sdwan-cloudwan-asn"
+  }
+}
+
+resource "aws_ssm_parameter" "fra_sdwan_cloudwan_peer_ip1" {
+  provider = aws.frankfurt
+  name     = "/sdwan/fra-sdwan/cloudwan-peer-ip1"
+  type     = "String"
+  value    = try(aws_networkmanager_connect_peer.fra_sdwan.configuration[0].bgp_configurations[0].core_network_address, "")
+
+  tags = {
+    Name = "sdwan-fra-sdwan-cloudwan-peer-ip1"
+  }
+}
+
+resource "aws_ssm_parameter" "fra_sdwan_cloudwan_peer_ip2" {
+  provider = aws.frankfurt
+  name     = "/sdwan/fra-sdwan/cloudwan-peer-ip2"
+  type     = "String"
+  value    = try(aws_networkmanager_connect_peer.fra_sdwan.configuration[0].bgp_configurations[1].core_network_address, "")
+
+  tags = {
+    Name = "sdwan-fra-sdwan-cloudwan-peer-ip2"
+  }
+}
+
+resource "aws_ssm_parameter" "fra_sdwan_cloudwan_asn" {
+  provider = aws.frankfurt
+  name     = "/sdwan/fra-sdwan/cloudwan-asn"
+  type     = "String"
+  value    = tostring(try(aws_networkmanager_connect_peer.fra_sdwan.configuration[0].bgp_configurations[0].core_network_asn, "64513"))
+
+  tags = {
+    Name = "sdwan-fra-sdwan-cloudwan-asn"
+  }
+}

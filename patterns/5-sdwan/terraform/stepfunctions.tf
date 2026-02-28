@@ -1,5 +1,5 @@
 # Step Functions State Machine and IAM Role for SD-WAN Orchestration
-# Orchestrates Phase1 → Wait → Phase2 → Wait → Phase3 sequentially
+# Orchestrates Phase1 → Wait → Phase2 → Wait → Phase3 (Cloud WAN BGP) → Wait → Phase4 (Verify)
 
 # -----------------------------------------------------------------------------
 # IAM Role for Step Functions Execution
@@ -43,6 +43,7 @@ resource "aws_iam_role_policy" "sdwan_stepfunctions_policy" {
           aws_lambda_function.sdwan_phase1.arn,
           aws_lambda_function.sdwan_phase2.arn,
           aws_lambda_function.sdwan_phase3.arn,
+          aws_lambda_function.sdwan_phase4.arn,
         ]
       },
       {
@@ -144,10 +145,10 @@ resource "aws_sfn_state_machine" "sdwan_orchestration" {
       Wait_After_Phase2 = {
         Type    = "Wait"
         Seconds = var.phase2_wait_seconds
-        Next    = "Phase3_Verify"
+        Next    = "Phase3_CloudWanBgp"
       }
 
-      Phase3_Verify = {
+      Phase3_CloudWanBgp = {
         Type     = "Task"
         Resource = aws_lambda_function.sdwan_phase3.arn
         Retry = [
@@ -166,6 +167,34 @@ resource "aws_sfn_state_machine" "sdwan_orchestration" {
           }
         ]
         ResultPath = "$.phase3_result"
+        Next       = "Wait_After_Phase3"
+      }
+
+      Wait_After_Phase3 = {
+        Type    = "Wait"
+        Seconds = 30
+        Next    = "Phase4_Verify"
+      }
+
+      Phase4_Verify = {
+        Type     = "Task"
+        Resource = aws_lambda_function.sdwan_phase4.arn
+        Retry = [
+          {
+            ErrorEquals     = ["Lambda.ServiceException", "Lambda.AWSLambdaException", "Lambda.SdkClientException"]
+            IntervalSeconds = 30
+            MaxAttempts     = 2
+            BackoffRate     = 2.0
+          }
+        ]
+        Catch = [
+          {
+            ErrorEquals = ["States.ALL"]
+            Next        = "FailureState"
+            ResultPath  = "$.error"
+          }
+        ]
+        ResultPath = "$.phase4_result"
         Next       = "SuccessState"
       }
 

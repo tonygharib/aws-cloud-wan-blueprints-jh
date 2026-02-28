@@ -120,12 +120,6 @@ output "vpn_psk" {
   sensitive   = true
 }
 
-output "serial_console_password" {
-  description = "Password for ubuntu user on EC2 serial console"
-  value       = local.serial_console_password
-  sensitive   = true
-}
-
 output "vpn_bgp_asns" {
   description = "BGP ASNs for VPN routers"
   value = {
@@ -195,4 +189,14 @@ output "nv_sdwan_internal_private_ip" {
 output "fra_sdwan_internal_private_ip" {
   description = "Frankfurt SD-WAN - Internal ENI Private IP (Connect Peer peer_address)"
   value       = aws_network_interface.fra_sdwan_sdwan_internal.private_ip
+}
+
+
+# -----------------------------------------------------------------------------
+# Step Functions - Quick Start Command
+# -----------------------------------------------------------------------------
+
+output "start_orchestration_command" {
+  description = "CLI command to start the SD-WAN orchestration state machine"
+  value       = "aws stepfunctions start-execution --state-machine-arn ${aws_sfn_state_machine.sdwan_orchestration.arn} --region us-east-1"
 }

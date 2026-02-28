@@ -91,6 +91,12 @@ resource "aws_iam_role_policy" "sdwan_lambda_policy" {
         ]
       },
       {
+        Sid      = "SSMPutParameter"
+        Effect   = "Allow"
+        Action   = "ssm:PutParameter"
+        Resource = "arn:aws:ssm:*:${data.aws_caller_identity.current.account_id}:parameter/sdwan/*"
+      },
+      {
         Sid    = "CloudWatchLogs"
         Effect = "Allow"
         Action = [
@@ -159,7 +165,7 @@ resource "aws_lambda_function" "sdwan_phase2" {
 resource "aws_lambda_function" "sdwan_phase3" {
   provider         = aws.virginia
   function_name    = "sdwan-phase3"
-  description      = "SD-WAN Phase 3 - Verification: IPsec, BGP, connectivity"
+  description      = "SD-WAN Phase 3 - Cloud WAN BGP configuration"
   role             = aws_iam_role.sdwan_lambda_execution_role.arn
   handler          = "phase3_handler.handler"
   runtime          = "python3.12"
@@ -176,6 +182,30 @@ resource "aws_lambda_function" "sdwan_phase3" {
 
   tags = {
     Name  = "sdwan-phase3"
-    Phase = "3-verify"
+    Phase = "3-cloudwan-bgp"
+  }
+}
+
+resource "aws_lambda_function" "sdwan_phase4" {
+  provider         = aws.virginia
+  function_name    = "sdwan-phase4"
+  description      = "SD-WAN Phase 4 - Verification: IPsec, BGP, Cloud WAN BGP, connectivity"
+  role             = aws_iam_role.sdwan_lambda_execution_role.arn
+  handler          = "phase4_handler.handler"
+  runtime          = "python3.12"
+  timeout          = 600
+  memory_size      = 256
+  filename         = data.archive_file.lambda_package.output_path
+  source_code_hash = data.archive_file.lambda_package.output_base64sha256
+
+  environment {
+    variables = {
+      SSM_PARAM_PREFIX = "/sdwan/"
+    }
+  }
+
+  tags = {
+    Name  = "sdwan-phase4"
+    Phase = "4-verify"
   }
 }
