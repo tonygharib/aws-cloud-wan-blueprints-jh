@@ -7,19 +7,9 @@ resource "random_password" "vpn_psk" {
   special = false
 }
 
-# Random password for EC2 serial console if not provided
-resource "random_password" "serial_console" {
-  count   = var.serial_console_password == null ? 1 : 0
-  length  = 16
-  special = false
-}
-
 locals {
   # VPN Pre-Shared Key - use provided value or generated one
   vpn_psk = coalesce(var.vpn_psk, try(random_password.vpn_psk[0].result, null))
-
-  # Serial console password - use provided value or generated one
-  serial_console_password = "aws123"
 
   # Common tags applied to all resources
   common_tags = {

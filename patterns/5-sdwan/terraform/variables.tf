@@ -69,13 +69,6 @@ variable "vpn_tunnel_cidr" {
   default     = "169.254.100.0/30"
 }
 
-variable "serial_console_password" {
-  description = "Password for ubuntu user to enable EC2 Serial Console login"
-  type        = string
-  sensitive   = true
-  default     = null
-}
-
 # Lambda and Step Functions Variables
 
 variable "lambda_source_dir" {

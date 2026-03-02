@@ -37,7 +37,7 @@ Each instance: Ubuntu 22.04 (c5.large) → LXD → VyOS container
 4. **Bootstraps VyOS routers** inside LXD containers via cloud-init user data
 5. **Configures IPsec VPN tunnels** (IKEv2, AES-256, SHA-256) and **eBGP peering** between SD-WAN and branch routers
 6. **Configures Cloud WAN BGP** — tunnel-less eBGP sessions between SDWAN routers and Cloud WAN Connect peers for cross-region route propagation
-7. **Verifies connectivity** — IPsec SA status, BGP sessions, interface state, and VTI ping tests
+7. **Verifies connectivity** — IPsec SA status, BGP sessions (VPN and Cloud WAN), interface state, VTI ping tests, and persists results to SSM Parameter Store at `/sdwan/verification-results`
 8. **Orchestrates everything** via AWS Step Functions + Lambda — no local scripts needed after `terraform apply`
 
 ## Prerequisites
@@ -45,7 +45,7 @@ Each instance: Ubuntu 22.04 (c5.large) → LXD → VyOS container
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - AWS CLI configured with credentials for 2 regions (`us-east-1` and `eu-central-1`)
 - An S3 bucket containing the VyOS LXD image (default: `fra-vyos-bucket` in `us-east-1`)
-- Python 3.12+ (for running tests locally)
+
 
 ## Quick Start
 
@@ -72,8 +72,8 @@ The state machine runs 4 phases automatically:
 |-------|--------|-------------|------------|
 | Phase 1 | `sdwan-phase1` | Installs packages, initializes LXD, deploys VyOS container, applies DHCP config | 60s |
 | Phase 2 | `sdwan-phase2` | Pushes IPsec tunnel and BGP peering configuration to each VyOS router | 90s |
-| Phase 3 | `sdwan-phase3` | Checks IPsec SA, BGP summary, interfaces, and runs VTI ping tests | 30s |
-| Phase 4 | `sdwan-phase4` | Configures Cloud WAN BGP neighbors on SDWAN routers (tunnel-less) | — |
+| Phase 3 | `sdwan-phase3` | Cloud WAN BGP configuration — configures tunnel-less BGP neighbors on SDWAN routers | 30s |
+| Phase 4 | `sdwan-phase4` | Verification: IPsec, BGP, Cloud WAN BGP, connectivity — checks all sessions and persists results to SSM | — |
 
 ## Project Structure
 
@@ -102,15 +102,8 @@ The state machine runs 4 phases automatically:
 │   ├── ssm_utils.py           # Shared SSM utilities (parameter reads, command execution)
 │   ├── phase1_handler.py      # Phase 1: base setup (packages, LXD, VyOS)
 │   ├── phase2_handler.py      # Phase 2: VPN/BGP configuration
-│   ├── phase3_handler.py      # Phase 3: verification
-│   └── phase4_handler.py      # Phase 4: Cloud WAN BGP configuration
-│
-└── tests/                     # Property-based tests (Hypothesis)
-    ├── test_phase1_properties.py
-    ├── test_phase2_properties.py
-    ├── test_phase3_properties.py
-    ├── test_phase4_properties.py
-    └── test_ssm_utils_properties.py
+│   ├── phase3_handler.py      # Phase 3: Cloud WAN BGP configuration
+│   └── phase4_handler.py      # Phase 4: verification
 ```
 
 ## Configuration
@@ -144,7 +137,7 @@ The state machine runs 4 phases automatically:
 | nv-sdwan | Auto-assigned from 10.100.0.0/24 | 64512 | NO_ENCAP (VPC fabric) |
 | fra-sdwan | Auto-assigned from 10.100.1.0/24 | 64513 | NO_ENCAP (VPC fabric) |
 
-Cloud WAN assigns 2 BGP peer IPs per Connect peer for redundancy. The actual IPs are stored in SSM Parameter Store and read by the Phase 4 Lambda at runtime.
+Cloud WAN assigns 2 BGP peer IPs per Connect peer for redundancy. The actual IPs are stored in SSM Parameter Store and read by the Phase 3 Lambda at runtime.
 
 ### Network CIDRs
 
@@ -156,16 +149,6 @@ Cloud WAN assigns 2 BGP peer IPs per Connect peer for redundancy. The actual IPs
 | fra-branch1 | eu-central-1 | 10.10.0.0/20 |
 | fra-sdwan | eu-central-1 | 10.200.0.0/16 |
 | Cloud WAN inside | Global | 10.100.0.0/16 |
-
-## Testing
-
-Tests use [Hypothesis](https://hypothesis.readthedocs.io/) for property-based testing of the Lambda configuration logic.
-
-```bash
-pip install hypothesis pytest
-
-pytest tests/ -v
-```
 
 ## Cleanup
 
