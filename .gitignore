@@ -1,52 +1,55 @@
-# Terraform
-.terraform/
+# Created by https://www.toptal.com/developers/gitignore/api/terraform
+# Edit at https://www.toptal.com/developers/gitignore?templates=terraform
+
+### Terraform ###
+# Local .terraform directories
 **/.terraform/*
+
+# .tfstate files
 *.tfstate
 *.tfstate.*
-tfplan
-.terraform.lock.hcl
+
+# Crash log files
 crash.log
+
+# Exclude all .tfvars files, which are likely to contain sentitive data, such as
+# password, private keys, and other secrets. These should not be part of version
+# control as they are data points which are potentially sensitive and subject
+# to change depending on the environment.
+#
 *.tfvars
+
+# Ignore override files as they are usually used to override resources locally and so
+# are not checked in
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+# Include override files you do wish to add to version control using negated pattern
+# !example_override.tf
+
+# Include tfplan files to ignore the plan output of command: terraform plan -out=tfplan
+# example: *tfplan*
+
+# Ignore CLI configuration files
 .terraformrc
 terraform.rc
 
-# Build artifacts
-.build/
+# End of https://www.toptal.com/developers/gitignore/api/terraform
 
-# Python
-__pycache__/
-*.pyc
-.pytest_cache/
-.hypothesis/
-
-# macOS
+# macOs
 .DS_Store
-
-# IDE / tooling config
-.kiro/
-.claude/
-.vscode/
-
-# Shell scripts (superseded by Lambda handlers)
-phase1-base-setup.sh
-phase2-vpn-bgp-config.sh
-phase3-verify.sh
-phase4-cloudwan-bgp-config.sh
-phase4-cloudwan-verify.sh
-
-# Unused templates
-templates/nv-swan-configuration.md
-templates/Vyos Instance Configuration requirement.md
-templates/vyos_config_nv_branch1.tpl
-templates/vyos_config_nv_sdwan.tpl
 
 # TFLINT
 .tflint.hcl
 
-# Misc
+# TF Local Files
+.terraform.lock.hcl
+
 .temp
+.build/
+.kiro/
+.claude/
+.hypothesis/
 tests/
