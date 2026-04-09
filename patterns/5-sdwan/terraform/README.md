@@ -104,21 +104,13 @@ The state machine runs 4 phases automatically:
 ├── orchestration.tf           # Lambda functions (Phase 1-4), IAM roles, Step Functions
 │                              #   state machine, CloudWatch log group
 │
-├── lambda/                    # Lambda function source code (Python 3.12)
-│   ├── ssm_utils.py           # Shared SSM utilities (parameter reads, command execution)
-│   ├── phase1_handler.py      # Phase 1: base setup (packages, LXD, VyOS, permissions fix)
-│   ├── phase2_handler.py      # Phase 2: VPN/BGP config + dummy interfaces on branches
-│   ├── phase3_handler.py      # Phase 3: Cloud WAN BGP config + route-maps + community tagging
-│   ├── phase4_handler.py      # Phase 4: verification (IPsec, BGP, Cloud WAN BGP, ping)
-│   └── phase4_cloudwan_bgp.py # Cloud WAN BGP vbash script generation (extracted for testing)
-│
-└── tests/                     # Validation and property-based tests (pytest)
-    ├── test_bgp_segmentation.py    # ASN uniqueness, dummy address non-overlap, policy validation
-    ├── test_phase1_properties.py   # Phase 1 handler property tests
-    ├── test_phase2_properties.py   # Phase 2 handler property tests
-    ├── test_phase3_properties.py   # Phase 3 handler property tests
-    ├── test_phase4_properties.py   # Phase 4 handler property tests
-    └── test_ssm_utils_properties.py # SSM utilities property tests
+└── lambda/                    # Lambda function source code (Python 3.12)
+    ├── ssm_utils.py           # Shared SSM utilities (parameter reads, command execution)
+    ├── phase1_handler.py      # Phase 1: base setup (packages, LXD, VyOS, permissions fix)
+    ├── phase2_handler.py      # Phase 2: VPN/BGP config + dummy interfaces on branches
+    ├── phase3_handler.py      # Phase 3: Cloud WAN BGP config + route-maps + community tagging
+    ├── phase4_handler.py      # Phase 4: verification (IPsec, BGP, Cloud WAN BGP, ping)
+    └── phase4_cloudwan_bgp.py # Cloud WAN BGP vbash script generation
 ```
 
 ## Configuration
@@ -207,25 +199,6 @@ Route flow: Branch dummy interfaces → eBGP to SDWAN hub → route-map `CLOUDWA
 | fra-branch1 | eu-central-1 | 10.10.0.0/20 |
 | fra-sdwan | eu-central-1 | 10.200.0.0/16 |
 | Cloud WAN inside | Global | 10.100.0.0/16 |
-
-## Testing
-
-Validation tests live in `tests/` and run with pytest:
-
-```bash
-# Run BGP segmentation validation tests
-pytest tests/test_bgp_segmentation.py -v
-
-# Run all tests
-pytest tests/ -v
-```
-
-The segmentation tests validate:
-- All 5 router ASNs are unique and outside the Cloud WAN range
-- Dummy interface addresses don't overlap with VPC CIDRs
-- `cloudwan_policy.json` has the correct segments, attachment policies, segment-actions, and routing policies
-
-Property-based tests cover the Lambda handler logic (phase 1–4 and SSM utilities).
 
 ## Cleanup
 
